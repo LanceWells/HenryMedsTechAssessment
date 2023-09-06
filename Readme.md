@@ -2,6 +2,10 @@
 
 This repository is used as a demonstrative CRUD app for software that manages appointments.
 
+> [!NOTE]
+> In an effort to timebox this assessment, I have left 'main' as my timeboxed branch, and intend
+> to add comments to another branch.
+
 ## Setup
 
 There are multiple options for setting this project up locally.
