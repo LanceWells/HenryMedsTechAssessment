@@ -1,6 +1,6 @@
 # Henry Meds Tech Assessment
 
-This repository is used as a demonstrative CRUD app for a WMS.
+This repository is used as a demonstrative CRUD app for software that manages appointments.
 
 ## Setup
 
