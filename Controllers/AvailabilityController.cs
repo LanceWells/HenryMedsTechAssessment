@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 using HenryMeds.Models;
 
 namespace HenryMeds.Controllers;
 
+/// <summary>
+/// A controller used to interface with <see cref="Availability"/> items.
+/// </summary>
 [ApiController]
 [Route("[controller]")]
 public class AvailabilityController : ControllerBase
@@ -12,6 +14,10 @@ public class AvailabilityController : ControllerBase
 
   private readonly IAppointmentsRepository db;
 
+  /// <summary>
+  /// Instantiates a new instance of <see cref="AvailabilityController"/>.
+  /// </summary>
+  /// <param name="logger">The associated logger. This should be DI'd.</param>
   public AvailabilityController(ILogger<AvailabilityController> logger)
   {
     _logger = logger;
@@ -20,6 +26,14 @@ public class AvailabilityController : ControllerBase
     db  = new AppointmentsRepository(ctx);
   }
 
+  /// <summary>
+  /// Creates an availability for a given provider.
+  /// </summary>
+  /// <param name="availability">The availability to create for the provider.</param>
+  /// <returns>
+  ///     - (200) OK, the availability was created. This returns a copy.
+  ///     - (500) There was an error.
+  /// </returns>
   [HttpPost()]
   public IActionResult SetAvailability(
     AvailabilityCreateDTO availability
@@ -47,6 +61,14 @@ public class AvailabilityController : ControllerBase
     return Created($"/{createdAvailability.Id}", createdAvailability);
   }
 
+  /// <summary>
+  /// Gets the list of availabilities for the given provider.
+  /// </summary>
+  /// <param name="providerID">The provider to fetch the availabilities for.</param>
+  /// <returns>
+  ///     - (200) OK, the availabilities were found. This returns a copy.
+  ///     - (500) There was an error.
+  /// </returns>
   [HttpGet("{providerID}")]
   public IActionResult GetAvailabilities(string providerID)
   {

@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 using HenryMeds.Models;
 
 namespace HenryMeds.Controllers;
 
+/// <summary>
+/// A controller used to interface with <see cref="Reservation"/> items.
+/// </summary>
 [ApiController]
 [Route("[controller]")]
 public class ReservationController : ControllerBase
@@ -12,6 +14,10 @@ public class ReservationController : ControllerBase
 
   private readonly IAppointmentsRepository db;
 
+  /// <summary>
+  /// Instantiates a new instance of <see cref="ReservationController"/>.
+  /// </summary>
+  /// <param name="logger">The associated logger. This should be DI'd.</param>
   public ReservationController(ILogger<ReservationController> logger)
   {
     _logger = logger;
@@ -20,6 +26,15 @@ public class ReservationController : ControllerBase
     db  = new AppointmentsRepository(ctx);
   }
 
+  /// <summary>
+  /// Books an appointment. This requires the ID for a given user, provider, and a time slot. This
+  /// can return an error code if the given time slot is not available.
+  /// </summary>
+  /// <param name="reservation">Information regarding the reservation to book.</param>
+  /// <returns>
+  ///     - (200) OK, the appointment was booked. This returns a copy.
+  ///     - (500) There was an error.
+  /// </returns>
   [HttpPost]
   public IActionResult BookAppointment(ReservationCreateDTO reservation)
   {
@@ -45,6 +60,21 @@ public class ReservationController : ControllerBase
     return new OkObjectResult(createdReservation);
   }
 
+  /// <summary>
+  /// Updates a given appointment. Currently this only updates the confirmation status of the
+  /// appointment. If this changes, the function name should reflect that update.
+  /// </summary>
+  /// <param name="reservationID">The ID for the reservation to confirm.</param>
+  /// <param name="reservationUpdate">
+  /// Generic mutable information for the reservation to update. Note that this only includes the
+  /// confirmation status at present.
+  /// </param>
+  /// <returns>
+  ///     - (200) OK, the reservation was updated. This returns a copy.
+  ///     - (404) The reservation was not found.
+  ///     - (409) The reservation was expired and cannot be updated.
+  ///     - (500) There was an error.
+  /// </returns>
   [HttpPatch("{reservationID}")]
   public IActionResult UpdateAppointmentConfirmation(
     string reservationID,

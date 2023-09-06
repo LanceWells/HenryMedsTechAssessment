@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
 using HenryMeds.Models;
 
 namespace HenryMeds.Controllers;
 
+/// <summary>
+/// A controller used to interface with <see cref="User"/> items.
+/// </summary>
 [ApiController]
 [Route("[controller]")]
 public class UserController : ControllerBase
@@ -12,6 +14,10 @@ public class UserController : ControllerBase
 
   private readonly IAppointmentsRepository db;
 
+  /// <summary>
+  /// Instantiates a new instance of <see cref="UserController"/>.
+  /// </summary>
+  /// <param name="logger">The associated logger. This should be DI'd.</param>
   public UserController(ILogger<UserController> logger)
   {
     _logger = logger;
@@ -20,6 +26,14 @@ public class UserController : ControllerBase
     db  = new AppointmentsRepository(ctx);
   }
 
+  /// <summary>
+  /// Creates a new user in the database.
+  /// </summary>
+  /// <param name="user">The user to be created.</param>
+  /// <returns>
+  ///     - (200) OK, the user was created. This returns a copy.
+  ///     - (500) There was an error.
+  /// </returns>
   [HttpPost()]
   public IActionResult CreateUser(UserCreateDTO user)
   {

@@ -1,15 +1,22 @@
-
 using Microsoft.EntityFrameworkCore;
 
 namespace HenryMeds.Models;
 
+/// <summary>
+/// An instantiation of the repository used to interface with the <see cref="AppointmentsContext"/>.
+/// </summary>
 public class AppointmentsRepository : IAppointmentsRepository
 {
   private readonly AppointmentsContext _context;
 
+  /// <summary>
+  /// Instantiates a new instance of <see cref="AppointmentsRepository"/>.
+  /// </summary>
+  /// <param name="context"></param>
   public AppointmentsRepository(AppointmentsContext context)
     => _context = context;
 
+  /// <inheritdoc/>
   public Availability? CreateAvailability(AvailabilityCreateDTO availability)
   {
     if (_context.Availabilities == null) {
@@ -28,6 +35,7 @@ public class AppointmentsRepository : IAppointmentsRepository
     return entry.Entity;
   }
 
+  /// <inheritdoc/>
   public Reservation? CreateReservation(ReservationCreateDTO reservation)
   {
     if (_context.Reservations == null || _context.Availabilities == null) {
@@ -66,6 +74,7 @@ public class AppointmentsRepository : IAppointmentsRepository
     return entry.Entity;
   }
 
+  /// <inheritdoc/>
   public User? CreateUser(UserCreateDTO user)
   {
     if (_context.Users == null) {
@@ -80,6 +89,7 @@ public class AppointmentsRepository : IAppointmentsRepository
     return entry.Entity;
   }
   
+  /// <inheritdoc/>
   public IEnumerable<Availability> GetAvailabilitiesByProvider(Guid providerID)
   {
     if (_context.Availabilities == null) {
@@ -93,6 +103,7 @@ public class AppointmentsRepository : IAppointmentsRepository
     return availabilities;
   }
 
+  /// <inheritdoc/>
   public Reservation? UpdateReservation(
     Reservation reservation,
     ReservationUpdateDTO reservationDTO
@@ -116,6 +127,7 @@ public class AppointmentsRepository : IAppointmentsRepository
     return entry.Entity;
   }
 
+  /// <inheritdoc/>
   public Reservation? GetReservation(Guid reservationID)
   {
     if (_context.Reservations == null)

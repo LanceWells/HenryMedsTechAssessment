@@ -31,3 +31,14 @@ The service will be available at port `3000`.
 The app may be run by invoking the `.Net Core Launch` debug option via VS Code.
 
 The service will host an http endpoint at port `5145`, and an https endpoint at `7121`.
+
+### Tradeoffs And Assumptions
+
+There were many tradeoffs in this implementation of the assigned work.
+
+Most notably, there is almost no data validation to speak of. This was cut for time constraints, and theoretically the work could remain in place if this service did not exist at the edge, and instead utilized an API service layer.
+
+For example:
+* A client can create an availability, and a provider can request an appointment.
+* There is also no resolution for the time availabilities, so a user can request an appointment 8 minutes, 12 seconds past the hour.
+* A user can set multiple availabilities that overlap. There is no check to see if a requested availability has already been set.
