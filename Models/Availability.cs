@@ -25,7 +25,7 @@ public class Availability
   /// <summary>
   /// A reference to the provider that this availability refers to.
   /// </summary>
-  public User Provider { get; set; } = null!;
+  public required User Provider { get; set; }
 
   /// <summary>
   /// The ID for the provider. This is a foreign key for <see cref="Provider"/>.
@@ -49,21 +49,17 @@ public class AvailabilityCreateDTO
   public DateTime End { get; set; }
 
   /// <summary>
-  /// Updates <see cref="Availability.ProviderId"/>.
-  /// </summary>
-  public Guid ProviderId { get; set; }
-
-  /// <summary>
   /// Creates a new instance of an <see cref="Availability"/> from this object.
   /// </summary>
   /// <returns>A new instance of an <see cref="Availability"/> from this object.</returns>
-  public Availability FromAvailabilityCreateDTO()
+  public Availability FromAvailabilityCreateDTO(Guid providerID)
   {
     Availability a = new()
     {
       Start = Start,
       End = End,
-      ProviderId = ProviderId,
+      ProviderId = providerID,
+      Provider = null!,
     };
 
     return a;

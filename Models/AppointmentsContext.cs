@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 
 namespace HenryMeds.Models;
 
 /// <summary>
 /// The context object that maintains the connection to the Appointments database.
 /// </summary>
-public class AppointmentsContext : DbContext
+public class AppointmentsInMemoryContext : DbContext
 {
   /// <summary>
   /// The name used to refer to the apointment database.

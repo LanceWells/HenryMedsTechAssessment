@@ -15,13 +15,21 @@ public interface IAppointmentsRepository
   User? CreateUser(UserCreateDTO user);
 
   /// <summary>
+  /// Gets a user from the database.
+  /// </summary>
+  /// <param name="userID">The ID for the user to find.</param>
+  /// <returns>The user with the provided ID, if one was found.</returns>
+  User? GetUser(Guid userID);
+
+  /// <summary>
   /// Creates a new availability in the database.
   /// </summary>
   /// <param name="availability">The availability to create.</param>
+  /// <param name="providerID">The ID for the associated provider.</param>
   /// <returns>
   /// The availability that was created. <c>null</c> if there were any errors in creation.
   /// </returns>
-  Availability? CreateAvailability(AvailabilityCreateDTO availability);
+  Availability? CreateAvailability(AvailabilityCreateDTO availability, Guid providerID);
 
   /// <summary>
   /// Gets a list of availabilities for the given provider. This need to be processed into something
@@ -29,8 +37,14 @@ public interface IAppointmentsRepository
   /// and be validated by the backend.
   /// </summary>
   /// <param name="providerID">The ID for the provider to get availabilities for.</param>
+  /// <param name="start">A filter for the time at which an appointment can start (inclusive)</param>
+  /// <param name="end">A filter for the time at which an appointment can end (inclusive)</param>
   /// <returns>The availabilities for the provider. <c>null</c> if there were any errors.</returns>
-  IEnumerable<Availability> GetAvailabilitiesByProvider(Guid providerID);
+  IEnumerable<Availability> GetAvailabilitiesByProvider(
+    Guid providerID,
+    DateTime? start = null,
+    DateTime? end = null
+  );
 
   /// <summary>
   /// Creates a new reservation in the database. Note that the reservation time must be a valid time

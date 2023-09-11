@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using HenryMeds.Models;
+using HenryMeds.Util;
+using System.Text.Json;
 
 namespace HenryMeds.Controllers;
 
@@ -22,7 +24,7 @@ public class ReservationController : ControllerBase
   {
     _logger = logger;
 
-    AppointmentsContext ctx = new AppointmentsContext();
+    AppointmentsInMemoryContext ctx = new AppointmentsInMemoryContext();
     db  = new AppointmentsRepository(ctx);
   }
 
@@ -33,17 +35,63 @@ public class ReservationController : ControllerBase
   /// <param name="reservation">Information regarding the reservation to book.</param>
   /// <returns>
   ///     - (200) OK, the appointment was booked. This returns a copy.
+  ///     - (400) Bad request, there were issues with data in the provided payload.
   ///     - (500) There was an error.
   /// </returns>
   [HttpPost]
   public IActionResult BookAppointment(ReservationCreateDTO reservation)
   {
-    _logger.Log(LogLevel.Trace, $"Received request to book an appointment {9999}");
+    _logger.Log(LogLevel.Trace, $"Received request to book an appointment {JsonSerializer.Serialize(reservation)}");
+
+    // Check the date time increments here. Even though we could round the times off, we don't so
+    // that the provided payload exactly matches what will be created in the database.
+    DateTime startTime = DateTimeUtils.Round15Mintues(reservation.ReservationTime);
+    if (startTime != reservation.ReservationTime)
+    {
+      string error = "Provided reservation time is not a 15-minute increment.";
+      _logger.Log(LogLevel.Error, error);
+      return BadRequest(error);
+    }
+
+    if (DateTime.Now > reservation.ReservationTime)
+    {
+      string error = "Reservations cannot be made in the past";
+      _logger.Log(LogLevel.Error, error);
+      return BadRequest(error);
+    }
+
+    if (reservation.ReservationTime - TimeSpan.FromHours(24) < DateTime.Now)
+    {
+      string error = "Reservations must be booked at least 24 hours in advance";
+      _logger.Log(LogLevel.Error, error);
+      return BadRequest(error);
+    }
+
+    DateTime start = reservation.ReservationTime;
+    DateTime end = reservation.ReservationTime + TimeSpan.FromMinutes(15);
+    IEnumerable<Availability> availabilities = db.GetAvailabilitiesByProvider(
+      reservation.ProviderID,
+      start,
+      end
+    );
+    if (availabilities.Count() == 0)
+    {
+      string error =
+        $"There are no availabilities for {reservation.ProviderID} between {start} and {end}";
+      _logger.Log(LogLevel.Error, error);
+      return BadRequest(error);
+    }
 
     Reservation? createdReservation;
     try
     {
       createdReservation = db.CreateReservation(reservation);
+    }
+    catch (AppointmentAlreadyBookedException abe)
+    {
+      string error = "That appointment time has already been booked";
+      _logger.Log(LogLevel.Error, $"{error} {0}", abe);
+      return BadRequest(error);
     }
     catch (Exception e)
     {
@@ -51,7 +99,7 @@ public class ReservationController : ControllerBase
       return StatusCode(500); 
     }
 
-    if (reservation == null)
+    if (createdReservation == null)
     {
       _logger.Log(LogLevel.Error, "Failed to create reservation");
       return StatusCode(500); 
@@ -81,7 +129,7 @@ public class ReservationController : ControllerBase
     ReservationUpdateDTO reservationUpdate
   )
   {
-    _logger.Log(LogLevel.Trace, $"Received request to confirm an appointment {9999}");
+    _logger.Log(LogLevel.Trace, $"Received request to confirm an appointment {reservationID}");
 
     bool canGetGuid = Guid.TryParse(reservationID, out Guid idAsGuid);
     if (!canGetGuid)

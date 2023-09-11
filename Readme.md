@@ -42,3 +42,10 @@ For example:
 * A client can create an availability, and a provider can request an appointment.
 * There is also no resolution for the time availabilities, so a user can request an appointment 8 minutes, 12 seconds past the hour.
 * A user can set multiple availabilities that overlap. There is no check to see if a requested availability has already been set.
+
+### Future Considerations
+
+There are a number of liberties taken here that are dependent on using an in-memory database rather than a full, relational database. This means that a large amount of logic might live in this server, where perhaps it should be moved to the queries themselves. This movement depends on a number of factors including:
+* The server's proximity to the database.
+* The relative costs of running functionality on the backend server vs the postgres server.
+* Whether or not we are using serverless architecture, and the cost that might imply.

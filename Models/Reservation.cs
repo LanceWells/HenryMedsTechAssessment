@@ -30,12 +30,12 @@ public class Reservation
   /// <summary>
   /// A reference to the client that has requested this reservation.
   /// </summary>
-  public User Client { get; set; } = null!;
+  public required User Client { get; set; }
 
   /// <summary>
   /// A reference to the provider that has been requested for this reservation.
   /// </summary>
-  public User Provider { get; set; } = null!;
+  public required User Provider { get; set; }
 
   /// <summary>
   /// The ID for the client. This is a foreign key for <see cref="Client"/> .
@@ -81,6 +81,8 @@ public class ReservationCreateDTO
       ProviderId = ProviderID,
       ReservationTime = ReservationTime,
       Confirmed = false,
+      Client = null!,
+      Provider = null!
     };
 
     return r;
@@ -112,6 +114,8 @@ public class ReservationUpdateDTO
       Expiration = reservation.Expiration,
       ProviderId = reservation.ProviderId,
       ReservationTime = reservation.ReservationTime,
+      Client = reservation.Client,
+      Provider = reservation.Provider,
     };
 
     return r;

@@ -1,33 +1,29 @@
-using Microsoft.EntityFrameworkCore;
+using HenryMeds.Util;
 
 namespace HenryMeds.Models;
 
 /// <summary>
-/// An instantiation of the repository used to interface with the <see cref="AppointmentsContext"/>.
+/// An instantiation of the repository used to interface with the <see cref="AppointmentsInMemoryContext"/>.
 /// </summary>
 public class AppointmentsRepository : IAppointmentsRepository
 {
-  private readonly AppointmentsContext _context;
+  private readonly AppointmentsInMemoryContext _context;
 
   /// <summary>
   /// Instantiates a new instance of <see cref="AppointmentsRepository"/>.
   /// </summary>
   /// <param name="context"></param>
-  public AppointmentsRepository(AppointmentsContext context)
+  public AppointmentsRepository(AppointmentsInMemoryContext context)
     => _context = context;
 
   /// <inheritdoc/>
-  public Availability? CreateAvailability(AvailabilityCreateDTO availability)
+  public Availability? CreateAvailability(AvailabilityCreateDTO availability, Guid providerID)
   {
-    if (_context.Availabilities == null) {
+    if (_context.Availabilities == null || _context.Users == null) {
       return null;
     }
 
-    Availability newAvailability = availability.FromAvailabilityCreateDTO();
-
-    // Right now, this isn't verifying that the user is a provider. A good addition would be to
-    // first fetch the user, then validate that they are a provider. This could be a restriction
-    // set up on insertion in the database itself instead.
+    Availability newAvailability = availability.FromAvailabilityCreateDTO(providerID);
 
     var entry = _context.Availabilities.Add(newAvailability);
     _context.SaveChanges();
@@ -38,36 +34,51 @@ public class AppointmentsRepository : IAppointmentsRepository
   /// <inheritdoc/>
   public Reservation? CreateReservation(ReservationCreateDTO reservation)
   {
-    if (_context.Reservations == null || _context.Availabilities == null) {
+    if (_context.Reservations == null || _context.Availabilities == null || _context.Users == null) {
       return null;
     }
 
-    // This is not currently checking for a 15-minute resolution. This is in the interest of time-
-    // boxing the project.
-    //
-    // Ideally, this would be a filter when inserting a rule that lives in PostGres, rather than
+    // Ideally, this would be a check when inserting a rule that lives in PostGres, rather than
     // a hard-coded rule here. That would remove the back-and-forth between the DB that we do in
-    // order to validate the data prior to insertion.
+    // order to validate the data prior to insertion. This is why this lives in the repository code,
+    // rather than in the resolver. This isn't a check becuase we're using an in-memory database for
+    // this version.
     //
-    // Right now this just blindly inserts a reservation without checking for over-booking. This is
-    // a desired feature, but not implemented here in favor of timeboxing the project. This could be
-    // another limit when adding the reservation; if one already exists at this time, then do not
-    // book.
-    Availability? availability = _context.Availabilities
-      .Where(
-          (availability) =>
-            availability.Start < reservation.ReservationTime
-            && availability.End > reservation.ReservationTime
-          )
-      .First();
+    // This datetime comparison should be fine (it works in in-memory databases), as the actual
+    // query being executed should check for value comparison rather than for object comparison.
+    //
+    // Note that this doesn't look for an "overlapping" time because appointments are at most 15
+    // mintues long, and we only allow appointments to be submitted at 15-minute increments on the
+    // hour.
+    IQueryable<Reservation> existingReservations =
+      from existingReservation in _context.Reservations
+      where
+        existingReservation.ReservationTime == reservation.ReservationTime
+        && existingReservation.ProviderId == reservation.ProviderID
+        && (
+          existingReservation.Expiration > DateTime.Now
+          || existingReservation.Confirmed == true
+        )
+      select existingReservation;
 
-    if (availability == null)
+    if (existingReservations.Count() > 0)
     {
-      return null;
+      throw new AppointmentAlreadyBookedException(
+        reservation.ReservationTime,
+        reservation.ClientID,
+        reservation.ProviderID
+      );
     }
 
     Reservation newReservation = reservation.FromReservationCreateDTO();
 
+    // This does not check if the users exist for the reservation. This is typically only a problem
+    // with the in-memory database; as a result I have elected to not include code to handle that
+    // problem here.
+    //
+    // In general, we should not be able to create reservations without users, provided that we have
+    // the foreign key constraints set up. For example, this request should be rejected by a
+    // PostGres database, as it would violate a foreign key constraint on insertion.
     var entry = _context.Reservations.Add(newReservation);
     _context.SaveChanges();
 
@@ -88,19 +99,53 @@ public class AppointmentsRepository : IAppointmentsRepository
 
     return entry.Entity;
   }
+
+  /// <inheritdoc/>
+  public User? GetUser(Guid userID)
+  {
+    if (_context.Users == null)
+    {
+      return null;
+    }
+
+    User? user = _context.Users.Find(userID);
+
+    return user;
+  }
   
   /// <inheritdoc/>
-  public IEnumerable<Availability> GetAvailabilitiesByProvider(Guid providerID)
+  public IEnumerable<Availability> GetAvailabilitiesByProvider(
+    Guid providerID,
+    DateTime? start = null,
+    DateTime? end = null
+  )
   {
     if (_context.Availabilities == null) {
       return new List<Availability>();
     }
 
-    IEnumerable<Availability> availabilities = _context.Availabilities
-      .Where((Availability a) => a.ProviderId == providerID)
-      .Include((Availability a) => a.Provider);
+    IQueryable<Availability> availabilities =
+      from availability in _context.Availabilities
+      where availability.ProviderId == providerID
+      select availability;
 
-    return availabilities;
+    if (start != null)
+    {
+      availabilities =
+        from availability in availabilities
+        where availability.Start <= start
+        select availability;
+    }
+
+    if (end != null)
+    {
+      availabilities =
+        from availability in availabilities
+        where availability.End >= end
+        select availability;
+    }
+
+    return availabilities.ToList();
   }
 
   /// <inheritdoc/>
